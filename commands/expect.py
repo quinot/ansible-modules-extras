@@ -56,7 +56,9 @@ options:
     required: false
   responses:
     description:
-      - Mapping of expected string and string to respond with
+      - Mapping of expected pattern to string to respond with. If the
+        response string is a list, successive matches return successive
+        entries.
     required: true
   timeout:
     description:
@@ -110,7 +112,13 @@ def main():
 
     events = dict()
     for key, value in responses.iteritems():
-        events[key.decode()] = u'%s\n' % value.rstrip('\n').decode()
+        if isinstance(value, list):
+            it = [u'%s\n' % v.rstrip('\n').decode() for v in value].__iter__()
+            value = lambda x: it.next()
+        else:
+            value = u'%s\n' % value.rstrip('\n').decode()
+
+        events[key.decode()] = value
 
     if args.strip() == '':
         module.fail_json(rc=256, msg="no command given")
